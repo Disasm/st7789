@@ -191,8 +191,22 @@ where
         self.write_command(Instruction::RAMWR, None)?;
         self.start_data()?;
 
+        let mut buf = [0; 128];
+        let mut i = 0;
+
         for color in colors {
-            self.write_word(color)?;
+            let word = color.to_be_bytes();
+            buf[i] = word[0];
+            buf[i+1] = word[1];
+            i += 2;
+
+            if i == buf.len() {
+                self.spi.write(&buf).map_err(Error::Spi)?;
+                i = 0;
+            }
+        }
+        if i > 0 {
+            self.spi.write(&buf[..i]).map_err(Error::Spi)?;
         }
 
         Ok(())
